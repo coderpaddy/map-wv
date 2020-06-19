@@ -1,0 +1,8 @@
+# File Types to ignore
+*.csv
+
+# Files To ignore
+
+
+# Folders to ignore
+env/
