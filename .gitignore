@@ -2,7 +2,11 @@
 *.csv
 
 # Files To ignore
-
+.gitignore
+html.html
 
 # Folders to ignore
 env/
+.vscode/
+*__pycache__/
+anotherenv/

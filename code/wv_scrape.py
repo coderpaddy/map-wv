@@ -1,34 +1,62 @@
-import requests
+import csv
+import os
+
+from requests_html import HTMLSession
 from bs4 import BeautifulSoup as BS
 
-url = "https://www.mapwv.gov/assessment/Assessment?Counties=1&OwnerName=Weaver&District=1"
-request = requests.get(url)
-soup = BS(request.content, 'html.parser')
-record_count = soup.find("span", id="MainContent_lblRecordCount")
-table = soup.find("table", id="MainContent_GridView1")
-table_rows = table.find_all("tr")[1:]
-print(len(table_rows))
-record_dict = {}
-for table_row in table_rows:
-    tr_index = table_rows.index(table_row)
-    record_dict[tr_index] = {
-        "root_parcel_id": table.find("a", id=f"MainContent_GridView1_hlCleanParcelID_{tr_index}").get_text(),
-        "current_owner": table.find("span", id=f"MainContent_GridView1_Label4_{tr_index}").get_text(),
-        "property_address": table.find("span", id=f"MainContent_GridView1_Label13_{tr_index}").get_text(),
-        "county": table.find("span", id=f"MainContent_GridView1_Label16_{tr_index}").get_text(),
-        "district": table.find("span", id=f"MainContent_GridView1_Label6_{tr_index}").get_text(),
-        "tax_map": table.find("a", id=f"MainContent_GridView1_hlMap_{tr_index}").get_text(),
-        "parcel": table.find("span", id=f"MainContent_GridView1_Label9_{tr_index}").get_text(),
-        "gis_map": table.find("span", id=f"MainContent_GridView1_hlMapLink_{tr_index}").get_text(),
-        "flood_tool": table.find("span", id=f"MainContent_GridView1_hlFloodLink_{tr_index}").get_text(),
-        "deeded_acres": table.find("span", id=f"MainContent_GridView1_Label10_{tr_index}").get_text(),
-        "property_class": table.find("span", id=f"MainContent_GridView1_Label1_{tr_index}").get_text(),
-        "land_use_code": table.find("span", id=f"MainContent_GridView1_Label2_{tr_index}").get_text(),
-        "tax_class": table.find("span", id=f"MainContent_GridView1_Label11_{tr_index}").get_text(),
-        "building_appraisal": table.find("span", id=f"MainContent_GridView1_Label12_{tr_index}").get_text(),
-        "land_appraisal": table.find("span", id=f"MainContent_GridView1_Label13_{tr_index}").get_text(),
-        "total_appraisal": table.find("span", id=f"MainContent_GridView1_Label14_{tr_index}").get_text(),
-        }
+from sheet_data import counties, get_refiner
+
+session = HTMLSession()
+
+def check_if_csv(url):
+    request = session.get(url)
+    has_csv = request.html.search('<a id="MainContent_hlExportURL" href="{csv_url}" style="color:Blue;font-size:12px;">Click here</a>')['csv_url']
+    if has_csv:
+        return has_csv
+    else:
+        return False
+
+def get_csv(url):
+    request = session.get(url)
+    link_for_csv = request.html.search('<a id="MainContent_hlExportURL" href="{csv_url}" style="color:Blue;font-size:12px;">Click here</a>')['csv_url']
+    return link_for_csv
+
+def save_csv(csv_file, csv_content):
+    csv_file.write(csv_content)
+    csv_file.close()
+    
 
 
-print(record_dict[0])
+print(counties.keys())
+
+which_county = input("Please enter the number of the county: ")
+county_code = list(counties.keys())[list(counties.values()).index(which_county)]
+
+url = f"https://www.mapwv.gov/assessment/Assessment?Counties={which_county}"
+request = session.get(url)
+soup = BS(request.html.html, 'html.parser')
+district_select = soup.find("select", id="MainContent_ddlbDistrict")
+select_options = [x.get_text() for x in district_select.find_all("option")]
+print("Which District? :", select_options)
+district_code = input("Please enter the number of the district ")
+
+#
+#
+#Scrape
+#
+#
+
+url = f"https://www.mapwv.gov/assessment/Assessment?Counties={which_county}&District={district_code}"
+check_csv_url = check_if_csv(url)
+if check_csv_url is not False:
+    r = session.get(check_csv_url, allow_redirects=True)
+    open(f'{which_county}-{district_code}.csv', 'wb').write(r.content)
+else:
+    print("Too Many Results. Scrapin Manually: ")
+    page_list = request.html.search('<span id="MainContent_lblPageRange" style="font-size:12px;">Page {page_count}</span>')['page_count'].split(" ")[-1]
+
+
+# Check if has csv
+# if not narrow search
+#       Check if has csv
+#       if not narrow search

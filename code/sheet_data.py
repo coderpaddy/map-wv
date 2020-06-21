@@ -1,4 +1,4 @@
-value_dict = {
+counties = {
     "All": "-1",
     "1-Barbour": "1",
     "2-Berkeley": "2",
@@ -56,3 +56,19 @@ value_dict = {
     "54-Wood": "54",
     "55-Wyoming": "55",
 }
+
+
+def get_refiner():
+    refiner = {}
+    for x in range(100):
+        if x == 0:
+            refiner[x] = {
+                "min_value": "1",
+                "max_value": "10001",
+            }
+        else:
+            refiner[x] = {
+                "min_value": f"{x}0001",
+                "max_value": f"{x + 1}0001",
+            }
+    return refiner
